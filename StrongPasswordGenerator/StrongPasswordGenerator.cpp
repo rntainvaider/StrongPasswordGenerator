@@ -3,6 +3,8 @@
 #include <string>
 #include <sstream>
 #include <random>
+#include <vector>
+#include <algorithm>
 
 struct CharSets {
 	bool lowercase;
@@ -83,15 +85,64 @@ CharSets getCategories() {
 	}
 }
 
-int generatePassword() {
+std::string generatePassword(int length, const CharSets& sets) {
+	std::string lowercase = "abcdefghijklmnopqrstuvwxyz";
+	std::string uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	std::string numbers = "0123456789";
+	std::string specialCharacters = "!@#$%^&*()_+-=[]{}|;:,.<>?";
 
-	return 0;
+	std::string full_pool;
+	std::vector<const std::string*> required_pools;
+
+	if (sets.lowercase) {
+		full_pool += lowercase;
+		required_pools.push_back(&lowercase);
+	}
+
+	if (sets.uppercase) {
+		full_pool += uppercase;
+		required_pools.push_back(&uppercase);
+	}
+
+	if (sets.numbers) {
+		full_pool += numbers;
+		required_pools.push_back(&numbers);
+	}
+
+	if (sets.specialCharacters) {
+		full_pool += specialCharacters;
+		required_pools.push_back(&specialCharacters);
+	}
+
+	std::string password(length, '\0');
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+
+	for (size_t i = 0; i < required_pools.size(); i++) {
+		const std::string* pool = required_pools[i];
+		std::uniform_int_distribution<size_t> dist(0, pool->size() - 1);
+		size_t idx = dist(gen);
+		password[i] = (*pool)[idx];
+	}
+
+	for (size_t i = required_pools.size(); i < length; i++)
+	{
+		std::uniform_int_distribution<size_t> dist(0, full_pool.size() - 1);
+		size_t idx = dist(gen);
+		password[i] = full_pool[idx];
+	}
+	std::shuffle(password.begin(), password.end(), gen);
+
+	return password;
 }
 
 int main() {
-	//int lengthPassword = getPasswordLength();
-	//CharSets sets = getCategories();
-	generatePassword();
+	int lengthPassword = getPasswordLength();
+	CharSets sets = getCategories();
+	std::string password = generatePassword(lengthPassword, sets);
+
+	std::cout << "Generated password: " << password << std::endl;
 
 	return 0;
 }
